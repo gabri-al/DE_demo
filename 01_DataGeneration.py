@@ -9,6 +9,10 @@
 
 # COMMAND ----------
 
+# MAGIC %run ../DE_demo/00_GlobalVars
+
+# COMMAND ----------
+
 # Import libraries
 from faker import Faker
 import pandas as pd
@@ -21,19 +25,7 @@ from pyspark.sql import functions as F
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Define Global Variables
-
-# COMMAND ----------
-
-_catalog = 'users'
-_schema = 'gabriele_albini'
-_volume = 'DE_demo_files'
-
-spark.sql("CREATE CATALOG IF NOT EXISTS "+_catalog)
-spark.sql("CREATE SCHEMA IF NOT EXISTS "+_catalog+"."+_schema)
-spark.sql("CREATE VOLUME IF NOT EXISTS "+_catalog+"."+_schema+"."+_volume)
-spark.sql("USE CATALOG "+_catalog)
-spark.sql("USE SCHEMA "+_schema)
+# MAGIC ### Define Variables
 
 # COMMAND ----------
 
@@ -61,7 +53,7 @@ path_volume_ = f"/Volumes/{_catalog}/{_schema}/{_volume}/"
 # COMMAND ----------
 
 # Generate customers function
-def gen_customers(N):
+def gen_customers(N, with_duplicates = True):
 
   # Variables
   channels_ = OrderedDict([("Web", 0.3),("Call Center", 0.2),("App", 0.5)])
@@ -78,14 +70,29 @@ def gen_customers(N):
 
     # Generate data
     id_.append('c-'+fake.uuid4())
-    first_name.append(fake.first_name())
-    last_name.append(fake.last_name())
+    first_name.append(fake.first_name().replace(',',''))
+    last_name.append(fake.last_name().replace(',',''))
     email.append(fake.ascii_company_email())
-    address.append(fake.address())
+    address.append(fake.address().replace(',','').replace('\n',' '))
     country.append(fake.random_elements(elements = countries_, length = 1)[0])
-    phone.append(fake.phone_number())
+    phone.append(fake.phone_number().replace(',',''))
     channel.append(fake.random_elements(elements = channels_, length = 1)[0])
     dates.append(fake.date_time_between(start_date=start, end_date=end).strftime("%Y-%m-%d %H:%M:%S"))
+
+  # Add duplicates
+  if with_duplicates:
+    tot_ = round(N * .04)
+    duplicate_ids = random.choices(range(N), k = tot_)
+    for i in duplicate_ids:
+      id_.append(id_[i])
+      first_name.append(first_name[i])
+      last_name.append(last_name[i])
+      email.append(email[i])
+      address.append(address[i])
+      country.append(country[i])
+      phone.append(phone[i])
+      channel.append(channel[i])
+      dates.append(dates[i])
 
   return pd.DataFrame({
     'clientid': id_, 'firstname': first_name, 'lastname': last_name,
@@ -95,6 +102,7 @@ def gen_customers(N):
 # COMMAND ----------
 
 df_customers = gen_customers(Ncustomers)
+df_customers.sort_values('clientid', inplace=True)
 display(df_customers.head(7))
 
 # COMMAND ----------
@@ -104,7 +112,7 @@ display(df_customers.head(7))
 
 # COMMAND ----------
 
-def gen_orders(N):
+def gen_orders(N, with_duplicates = True):
 
   # Initialize empty lists
   id_ = []; dates = []; items = []; amount = []
@@ -123,6 +131,17 @@ def gen_orders(N):
     items.append(item)
     amount.append(round( item * (fake.random.uniform(0,1) + 4)  ) )
 
+  # Add duplicates
+  if with_duplicates:
+    tot_ = round(N * .048)
+    duplicate_ids = random.choices(range(N), k = tot_)
+    for i in duplicate_ids:
+      id_.append(id_[i])
+      dates.append(dates[i])
+      items.append(items[i])
+      amount.append(amount[i])
+      customerid.append(customerid[i])
+
   return pd.DataFrame({
     'orderid': id_, 'transactiondate': dates,
     'items': items, 'amount': amount, 'customerid': customerid})
@@ -130,6 +149,7 @@ def gen_orders(N):
 # COMMAND ----------
 
 df_orders = gen_orders(Norders)
+df_orders.sort_values('orderid', inplace=True)
 display(df_orders.head(7))
 
 # COMMAND ----------
@@ -180,18 +200,18 @@ size1 = round(Ncustomers * 0.75 + 3)
 
 # Customers
 df_customers1 = df_customers.iloc[:size1, :]
-df_customers1.to_csv(path_volume_+"/customers_001.csv", index=False, mode='w')
+df_customers1.to_csv(path_volume_+"/customers_001.csv", index=False, mode='w', sep = '|')
 df_customers2 = df_customers.iloc[size1+22:, :]
-df_customers2.to_csv(path_volume_+"/customers_002.csv", index=False, mode='w')
+df_customers2.to_csv(path_volume_+"/customers_002.csv", index=False, mode='w', sep = '|')
 
 # Orders
 df_orders1 = df_orders.loc[df_orders['customerid'].isin(df_customers1['clientid']), :]
-df_orders1.to_csv(path_volume_+"/orders_001.csv", index=False, mode='w')
+df_orders1.to_csv(path_volume_+"/orders_001.csv", index=False, mode='w', sep = '|')
 df_orders2 = df_orders.loc[~df_orders['customerid'].isin(df_customers1['clientid']), :]
-df_orders2.to_csv(path_volume_+"/orders_002.csv", index=False, mode='w')
+df_orders2.to_csv(path_volume_+"/orders_002.csv", index=False, mode='w', sep = '|')
 
 # Marketing Activity
 df_marketing1 = df_marketing.loc[df_marketing['targetedcustomerid'].isin(df_customers1['clientid']), :]
-df_marketing1.to_csv(path_volume_+"/marketing_001.csv", index=False, mode='w')
+df_marketing1.to_csv(path_volume_+"/marketing_001.csv", index=False, mode='w', sep = '|')
 df_marketing2 = df_marketing.loc[~df_marketing['targetedcustomerid'].isin(df_customers1['clientid']), :]
-df_marketing2.to_csv(path_volume_+"/marketing_002.csv", index=False, mode='w')
+df_marketing2.to_csv(path_volume_+"/marketing_002.csv", index=False, mode='w', sep = '|')
