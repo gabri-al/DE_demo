@@ -179,7 +179,7 @@ def gen_marketing(N):
     id_.append('a-'+fake.uuid4())
     dates.append(fake.date_time_between(start_date=start, end_date=end).strftime("%Y-%m-%d %H:%M:%S"))
     clicked.append(round(fake.random.uniform(0, 1)))
-    discount.append(fake.random.uniform(0, 0.41))
+    discount.append(round(fake.random.uniform(0, 0.41), 2))
 
   return pd.DataFrame({
     'marketingid': id_, 'marketingdate': dates, 'discount': discount,

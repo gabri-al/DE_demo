@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ## Orders Silver Layer
+# MAGIC ## Marketing Silver Layer
 
 # COMMAND ----------
 
@@ -29,27 +29,26 @@ def validate_customer(id_):
 
 # Wrap function into a Pandas UDF
 @F.pandas_udf("string")
-def generate_flags(customerids: pd.Series) -> pd.Series:
-  return customerids.apply(validate_customer)
+def generate_flags(customerid: pd.Series) -> pd.Series:
+  return customerid.apply(validate_customer)
 
 # COMMAND ----------
 
-df = (spark.table("orders_bronze")
-        .filter('customerid is not null')
-        .withColumn('customerid_is_valid', generate_flags('customerid'))
-        .createOrReplaceTempView("orders_silver_1"))
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC -- select * from orders_silver_1 where customerid_is_valid = 'N';
+df = (spark.table("marketing_bronze")
+        .filter('targetedcustomerid is not null')
+        .withColumn('customerid_is_valid', generate_flags('targetedcustomerid'))
+        .createOrReplaceTempView("marketing_silver_1"))
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC /*
-# MAGIC with N_ids as (
-# MAGIC   select distinct customerid from orders_silver_1 where customerid_is_valid = 'N'
+# MAGIC -- select * from marketing_silver_1 where customerid_is_valid = 'N';
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC /*with N_ids as (
+# MAGIC   select distinct targetedcustomerid from marketing_silver_1 where customerid_is_valid = 'N'
 # MAGIC )
 # MAGIC   select * from customers_silver 
 # MAGIC   where clientid in (select * from N_ids);
@@ -63,14 +62,14 @@ df = (spark.table("orders_bronze")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC MERGE INTO orders_silver a
-# MAGIC USING (select distinct orderid, transactiondate, items, amount, customerid
-# MAGIC       from orders_silver_1 where customerid_is_valid = 'Y') b
-# MAGIC ON a.orderid = b.orderid
+# MAGIC MERGE INTO marketing_silver a
+# MAGIC USING (select distinct marketingid, marketingdate, discount, clicked, targetedcustomerid
+# MAGIC       from marketing_silver_1 where customerid_is_valid = 'Y') b
+# MAGIC ON a.marketingid = b.marketingid
 # MAGIC WHEN NOT MATCHED THEN
 # MAGIC  INSERT *
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC -- select count(*), count(distinct orderid) from orders_silver;
+# MAGIC -- select count(*), count(distinct marketingid) from marketing_silver;
