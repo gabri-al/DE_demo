@@ -1,0 +1,222 @@
+{
+  "name": "DE_Demo_Job",
+  "email_notifications": {
+    "on_success": [
+      "gabriele.albini@databricks.com"
+    ],
+    "on_failure": [
+      "gabriele.albini@databricks.com"
+    ],
+    "no_alert_for_skipped_runs": false
+  },
+  "webhook_notifications": {},
+  "notification_settings": {
+    "no_alert_for_skipped_runs": false,
+    "no_alert_for_canceled_runs": true
+  },
+  "timeout_seconds": 0,
+  "schedule": {
+    "quartz_cron_expression": "0 30 10 * * ?",
+    "timezone_id": "Europe/Amsterdam",
+    "pause_status": "UNPAUSED"
+  },
+  "max_concurrent_runs": 1,
+  "tasks": [
+    {
+      "task_key": "Generate_Data",
+      "run_if": "ALL_SUCCESS",
+      "for_each_task": {
+        "inputs": "[1,2,3]",
+        "task": {
+          "task_key": "Data_Generation_iteration",
+          "run_if": "ALL_SUCCESS",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/01_DataGeneration",
+            "base_parameters": {
+              "task_i": "{{input}}"
+            },
+            "source": "WORKSPACE"
+          },
+          "max_retries": 1,
+          "min_retry_interval_millis": 3000,
+          "retry_on_timeout": true,
+          "disable_auto_optimization": false,
+          "timeout_seconds": 0,
+          "email_notifications": {},
+          "webhook_notifications": {}
+        }
+      },
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Prepare_Tables",
+      "run_if": "ALL_SUCCESS",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/03_InitializeTables",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 0,
+      "min_retry_interval_millis": 900000,
+      "retry_on_timeout": false,
+      "disable_auto_optimization": true,
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Bronze_Layer",
+      "depends_on": [
+        {
+          "task_key": "Prepare_Tables"
+        },
+        {
+          "task_key": "Generate_Data"
+        }
+      ],
+      "run_if": "ALL_SUCCESS",
+      "for_each_task": {
+        "inputs": "[1,2,3]",
+        "task": {
+          "task_key": "Bronze_Layer_iteration",
+          "run_if": "ALL_SUCCESS",
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/04_WriteBronze",
+            "base_parameters": {
+              "task_i": "{{input}}"
+            },
+            "source": "WORKSPACE"
+          },
+          "max_retries": 0,
+          "min_retry_interval_millis": 15000,
+          "retry_on_timeout": false,
+          "disable_auto_optimization": false,
+          "timeout_seconds": 0,
+          "email_notifications": {},
+          "webhook_notifications": {}
+        }
+      },
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Silver_Customers",
+      "depends_on": [
+        {
+          "task_key": "Bronze_Layer"
+        }
+      ],
+      "run_if": "ALL_SUCCESS",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/05_Silver_Customers",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 0,
+      "min_retry_interval_millis": 15000,
+      "retry_on_timeout": false,
+      "disable_auto_optimization": false,
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Silver_Marketing",
+      "depends_on": [
+        {
+          "task_key": "Bronze_Layer"
+        }
+      ],
+      "run_if": "ALL_SUCCESS",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/07_Silver_Marketing",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 0,
+      "min_retry_interval_millis": 15000,
+      "retry_on_timeout": false,
+      "disable_auto_optimization": false,
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Silver_Orders",
+      "depends_on": [
+        {
+          "task_key": "Bronze_Layer"
+        }
+      ],
+      "run_if": "ALL_SUCCESS",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/06_Silver_Orders",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 0,
+      "min_retry_interval_millis": 15000,
+      "retry_on_timeout": false,
+      "disable_auto_optimization": false,
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    },
+    {
+      "task_key": "Gold_Layer",
+      "depends_on": [
+        {
+          "task_key": "Silver_Marketing"
+        },
+        {
+          "task_key": "Silver_Customers"
+        },
+        {
+          "task_key": "Silver_Orders"
+        }
+      ],
+      "run_if": "ALL_SUCCESS",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Users/gabriele.albini@databricks.com/DE_demo/08_Gold_Order_Attribution",
+        "source": "WORKSPACE"
+      },
+      "max_retries": 0,
+      "min_retry_interval_millis": 15000,
+      "retry_on_timeout": false,
+      "disable_auto_optimization": false,
+      "timeout_seconds": 0,
+      "email_notifications": {},
+      "webhook_notifications": {}
+    }
+  ],
+  "tags": {
+    "Gabriele_Demo": ""
+  },
+  "queue": {
+    "enabled": true
+  },
+  "parameters": [
+    {
+      "name": "_catalog",
+      "default": "users"
+    },
+    {
+      "name": "_schema",
+      "default": "gabriele_albini"
+    },
+    {
+      "name": "_volume",
+      "default": "DE_demo_land"
+    },
+    {
+      "name": "recreate_tbls",
+      "default": "True"
+    },
+    {
+      "name": "SEEDS_",
+      "default": "[301, 501, 801]"
+    }
+  ],
+  "run_as": {
+    "user_name": "gabriele.albini@databricks.com"
+  }
+}
