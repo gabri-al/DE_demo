@@ -18,7 +18,4 @@ spark.sql("USE SCHEMA "+_schema)
 
 # COMMAND ----------
 
-# Bronze naming
-_customer_bronze = 'customers_bronze'
-_customer_bronze = 'customers_bronze'
-_customer_bronze = 'customers_bronze'
+recreate_tbls = True

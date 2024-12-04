@@ -31,7 +31,7 @@ from pyspark.sql import functions as F
 
 # Initialize Faker
 fake = Faker()
-SEED_START = 500
+SEED_START = 600
 
 # Dataset Size
 Ncustomers = 75000
@@ -166,7 +166,7 @@ def gen_marketing(N):
   marketing_activities_ = OrderedDict([("SMS", 0.33),("email", 0.33),("bunner", 0.33)])
 
   # Initialize empty lists
-  id_ = []; dates = []; activity = []; clicked = []
+  id_ = []; dates = []; activity = []; clicked = []; discount = []
   
   # Generate data
   customerid = random.choices(list(df_customers['clientid']), k=N)
@@ -179,9 +179,10 @@ def gen_marketing(N):
     id_.append('a-'+fake.uuid4())
     dates.append(fake.date_time_between(start_date=start, end_date=end).strftime("%Y-%m-%d %H:%M:%S"))
     clicked.append(round(fake.random.uniform(0, 1)))
+    discount.append(fake.random.uniform(0, 0.41))
 
   return pd.DataFrame({
-    'marketingid': id_, 'marketingdate': dates,
+    'marketingid': id_, 'marketingdate': dates, 'discount': discount,
     'clicked': clicked, 'targetedcustomerid': customerid})
 
 # COMMAND ----------
