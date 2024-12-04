@@ -4,11 +4,20 @@
 
 # COMMAND ----------
 
-# MAGIC %run ../DE_demo/00_GlobalVars
+# %run ../DE_demo/00_GlobalVars
 
 # COMMAND ----------
 
-file_seq = '001'
+file_seq = '00' + str(dbutils.widgets.get("task_i"))
+_catalog = dbutils.widgets.get("_catalog")
+_schema = dbutils.widgets.get("_schema")
+_volume = dbutils.widgets.get("_volume")
+
+spark.sql("CREATE CATALOG IF NOT EXISTS "+_catalog)
+spark.sql("CREATE SCHEMA IF NOT EXISTS "+_catalog+"."+_schema)
+spark.sql("CREATE VOLUME IF NOT EXISTS "+_catalog+"."+_schema+"."+_volume)
+spark.sql("USE CATALOG "+_catalog)
+spark.sql("USE SCHEMA "+_schema)
 
 # COMMAND ----------
 

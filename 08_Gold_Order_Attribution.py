@@ -4,7 +4,19 @@
 
 # COMMAND ----------
 
-# MAGIC %run ../DE_demo/00_GlobalVars
+# %run ../DE_demo/00_GlobalVars
+
+# COMMAND ----------
+
+_catalog = dbutils.widgets.get("_catalog")
+_schema = dbutils.widgets.get("_schema")
+_volume = dbutils.widgets.get("_volume")
+
+spark.sql("CREATE CATALOG IF NOT EXISTS "+_catalog)
+spark.sql("CREATE SCHEMA IF NOT EXISTS "+_catalog+"."+_schema)
+spark.sql("CREATE VOLUME IF NOT EXISTS "+_catalog+"."+_schema+"."+_volume)
+spark.sql("USE CATALOG "+_catalog)
+spark.sql("USE SCHEMA "+_schema)
 
 # COMMAND ----------
 
@@ -20,12 +32,12 @@ print(attr_window)
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from orders_silver limit 5;
+# MAGIC --select * from orders_silver limit 5;
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from marketing_silver limit 5;
+# MAGIC --select * from marketing_silver limit 5;
 
 # COMMAND ----------
 
@@ -78,7 +90,7 @@ print(attr_window)
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from attribution_staging_02 where marketingid is not null and clientid is not null;
+# MAGIC --select * from attribution_staging_02 where marketingid is not null and clientid is not null;
 
 # COMMAND ----------
 
@@ -94,5 +106,5 @@ print(attr_window)
 # MAGIC   select * EXCEPT (double_attribution)
 # MAGIC   from attribution_staging_02
 # MAGIC   where double_attribution = 0 
-# MAGIC     and clientid is not none
+# MAGIC     and clientid is not null
 # MAGIC     and date(creation_date) <= date(transactiondate); -- client existing before their first order

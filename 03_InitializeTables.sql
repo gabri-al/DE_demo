@@ -4,7 +4,21 @@
 
 -- COMMAND ----------
 
--- MAGIC %run ../DE_demo/00_GlobalVars
+-- %run ../DE_demo/00_GlobalVars
+
+-- COMMAND ----------
+
+-- MAGIC %python
+-- MAGIC _catalog = dbutils.widgets.get("_catalog")
+-- MAGIC _schema = dbutils.widgets.get("_schema")
+-- MAGIC _volume = dbutils.widgets.get("_volume")
+-- MAGIC recreate_tbls = bool(dbutils.widgets.get("recreate_tbls"))
+-- MAGIC
+-- MAGIC spark.sql("CREATE CATALOG IF NOT EXISTS "+_catalog)
+-- MAGIC spark.sql("CREATE SCHEMA IF NOT EXISTS "+_catalog+"."+_schema)
+-- MAGIC spark.sql("CREATE VOLUME IF NOT EXISTS "+_catalog+"."+_schema+"."+_volume)
+-- MAGIC spark.sql("USE CATALOG "+_catalog)
+-- MAGIC spark.sql("USE SCHEMA "+_schema)
 
 -- COMMAND ----------
 

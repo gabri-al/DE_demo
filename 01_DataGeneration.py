@@ -9,7 +9,12 @@
 
 # COMMAND ----------
 
-# MAGIC %run ../DE_demo/00_GlobalVars
+# %run ../DE_demo/00_GlobalVars
+
+# COMMAND ----------
+
+# MAGIC %pip install faker
+# MAGIC dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -29,12 +34,28 @@ from pyspark.sql import functions as F
 
 # COMMAND ----------
 
+i_ = int(dbutils.widgets.get("task_i"))
+_catalog = dbutils.widgets.get("_catalog")
+_schema = dbutils.widgets.get("_schema")
+_volume = dbutils.widgets.get("_volume")
+SEEDS_ = list(dbutils.widgets.get("SEEDS_"))
+
+# COMMAND ----------
+
+spark.sql("CREATE CATALOG IF NOT EXISTS "+_catalog)
+spark.sql("CREATE SCHEMA IF NOT EXISTS "+_catalog+"."+_schema)
+spark.sql("CREATE VOLUME IF NOT EXISTS "+_catalog+"."+_schema+"."+_volume)
+spark.sql("USE CATALOG "+_catalog)
+spark.sql("USE SCHEMA "+_schema)
+
+# COMMAND ----------
+
 # Initialize Faker
 fake = Faker()
-SEED_START = 600
+SEED_START = int(SEEDS_[i_])
 
 # Dataset Size
-Ncustomers = 75000
+Ncustomers = 25000
 Norders = round(1.5 * Ncustomers)
 Nmarketing = round(2.5 * Ncustomers)
 
@@ -69,7 +90,7 @@ def gen_customers(N, with_duplicates = True):
     fake.seed_instance(SEED_START+i)
 
     # Generate data
-    id_.append('c-'+fake.uuid4())
+    id_.append('c-'+str(fake.uuid4()))
     first_name.append(fake.first_name().replace(',',''))
     last_name.append(fake.last_name().replace(',',''))
     email.append(fake.ascii_company_email())
@@ -197,22 +218,12 @@ display(df_marketing.head(7))
 
 # COMMAND ----------
 
-size1 = round(Ncustomers * 0.75 + 3)
-
 # Customers
-df_customers1 = df_customers.iloc[:size1, :]
-df_customers1.to_csv(path_volume_+"/customers_001.csv", index=False, mode='w', sep = '|')
-df_customers2 = df_customers.iloc[size1+22:, :]
-df_customers2.to_csv(path_volume_+"/customers_002.csv", index=False, mode='w', sep = '|')
+df_customers1 = df_customers.iloc[:-22, :]
+df_customers1.to_csv(path_volume_+"/customers_00"+str(i_)+".csv", index=False, mode='w', sep = '|')
 
 # Orders
-df_orders1 = df_orders.loc[df_orders['customerid'].isin(df_customers1['clientid']), :]
-df_orders1.to_csv(path_volume_+"/orders_001.csv", index=False, mode='w', sep = '|')
-df_orders2 = df_orders.loc[~df_orders['customerid'].isin(df_customers1['clientid']), :]
-df_orders2.to_csv(path_volume_+"/orders_002.csv", index=False, mode='w', sep = '|')
+df_orders.to_csv(path_volume_+"/orders_00"+str(i_)+".csv", index=False, mode='w', sep = '|')
 
 # Marketing Activity
-df_marketing1 = df_marketing.loc[df_marketing['targetedcustomerid'].isin(df_customers1['clientid']), :]
-df_marketing1.to_csv(path_volume_+"/marketing_001.csv", index=False, mode='w', sep = '|')
-df_marketing2 = df_marketing.loc[~df_marketing['targetedcustomerid'].isin(df_customers1['clientid']), :]
-df_marketing2.to_csv(path_volume_+"/marketing_002.csv", index=False, mode='w', sep = '|')
+df_marketing.to_csv(path_volume_+"/marketing_00"+str(i_)+".csv", index=False, mode='w', sep = '|')

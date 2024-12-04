@@ -6,7 +6,7 @@
 
 _catalog = 'users'
 _schema = 'gabriele_albini'
-_volume = 'DE_demo_files'
+_volume = 'DE_demo_landing'
 
 # COMMAND ----------
 
@@ -19,3 +19,7 @@ spark.sql("USE SCHEMA "+_schema)
 # COMMAND ----------
 
 recreate_tbls = True
+
+# COMMAND ----------
+
+SEEDS_ = [301, 501, 801]
