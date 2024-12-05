@@ -6,7 +6,7 @@
 
 _catalog = 'users'
 _schema = 'gabriele_albini'
-_volume = 'DE_demo_landing'
+_volume = 'DE_demo_land'
 
 # COMMAND ----------
 

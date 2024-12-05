@@ -4,6 +4,31 @@
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC From the **Workspace** section you can:
+# MAGIC - Configure compute
+# MAGIC - Access UC
+# MAGIC - Set up a Git Folder
+# MAGIC - Navigate in your workspace's folders and notebooks
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC Within a **Notebook**:
+# MAGIC - We have a main coding language
+# MAGIC - We can use magic commands to switch language and run different operations
+# MAGIC
+# MAGIC **What are Magic commands?**
+# MAGIC - `%python %r %sql %scala` switch cell programming language
+# MAGIC - `%sh` run shell code on the driver
+# MAGIC - `%md` style a cell as markdown
+# MAGIC - `%pip` install new Python libraries
+# MAGIC - `%run` run a remote Notebook
+# MAGIC - `%fs` shortcut for `dbutils` filesystem commands
+
+# COMMAND ----------
+
+# DBTITLE 1,Run a remote Notebook
 # MAGIC %run ../DE_demo/00_GlobalVars
 
 # COMMAND ----------
@@ -13,7 +38,8 @@
 
 # COMMAND ----------
 
-# Read the CSV file from the volume
+# DBTITLE 1,Create a temp view from a spark df
+# Read the CSV file from Volume
 df = (spark.
       read.
       format("csv").
@@ -29,15 +55,17 @@ df = (spark.
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Check Data
+# MAGIC ## Validate data
 
 # COMMAND ----------
 
+# DBTITLE 1,Check for duplicates using SQL
 # MAGIC %sql
 # MAGIC select count(*) tot_recs, count(distinct clientid) tot_distinct from customers_tv;
 
 # COMMAND ----------
 
+# DBTITLE 1,Run SQL CTE
 # MAGIC %sql
 # MAGIC -- Explore duplicated records
 # MAGIC with dupes as (
@@ -80,8 +108,7 @@ df = (spark.
 
 # COMMAND ----------
 
-# Persist data to a Delta table
-
+# DBTITLE 1,By default, CREATE TABLE writes to Delta
 # Table Definition
 spark.sql(f"""
   CREATE OR REPLACE TABLE customers_test
@@ -98,6 +125,7 @@ spark.sql(f"""
 
 # COMMAND ----------
 
+# DBTITLE 1,Summarize
 # Summarize table stats
 df__ = spark.table(_catalog+'.'+_schema+'.'+"customers_test")
 dbutils.data.summarize(df__)
@@ -117,10 +145,11 @@ spark.sql(f"""
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Describe Delta Table
+# MAGIC ## Delta Format Overview
 
 # COMMAND ----------
 
+# DBTITLE 1,Describe Delta
 # MAGIC %sql
 # MAGIC DESCRIBE customers_test;
 
@@ -137,10 +166,11 @@ spark.sql(f"""
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Time Travel
+# MAGIC ### Time Travel
 
 # COMMAND ----------
 
+# DBTITLE 1,Access Available History
 # MAGIC %sql
 # MAGIC DESCRIBE HISTORY customers_test;
 
@@ -151,11 +181,13 @@ spark.sql(f"""
 
 # COMMAND ----------
 
+# DBTITLE 1,Query History by Version
 # MAGIC %sql
 # MAGIC Select count(*) from customers_test version as of 9;
 
 # COMMAND ----------
 
+# DBTITLE 1,Query History by Timestamp
 # MAGIC %sql
 # MAGIC SELECT * FROM customers_test TIMESTAMP AS OF '2024-12-04T07:33:21.000+00:00';
 
@@ -176,6 +208,7 @@ spark.sql(f"""
 
 # COMMAND ----------
 
+# DBTITLE 1,Rollback
 # MAGIC %sql
 # MAGIC -- Restore to a previous version
 # MAGIC RESTORE TABLE customers_test TO VERSION AS OF 10;
@@ -183,6 +216,7 @@ spark.sql(f"""
 
 # COMMAND ----------
 
+# DBTITLE 1,VACUUM
 # MAGIC %sql
 # MAGIC -- Clean up history
 # MAGIC VACUUM customers_test RETAIN 0 HOURS DRY RUN;
@@ -197,7 +231,7 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 
 # MAGIC %sql
 # MAGIC SET spark.databricks.delta.retentionDurationCheck.enabled = false;
-# MAGIC ALTER TABLE customers_test SET TBLPROPERTIES ('delta.deletedFileRetentionDuration' = '1 hour');
+# MAGIC ALTER TABLE customers_test SET TBLPROPERTIES ('delta.deletedFileRetentionDuration' = '0 hour'); -- Modify accordignly
 # MAGIC VACUUM customers_test DRY RUN;
 
 # COMMAND ----------
@@ -214,11 +248,85 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC -- What's happening here
-# MAGIC select * from customers_test VERSION AS OF 2;
+# MAGIC -- What's happening here: File read error
+# MAGIC select * from customers_test VERSION AS OF 3;
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC -- Restore configuration
 # MAGIC SET spark.databricks.delta.retentionDurationCheck.enabled = true;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Column and row masking
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from customers_test limit 6;
+
+# COMMAND ----------
+
+# DBTITLE 1,Column Masking
+# MAGIC %sql
+# MAGIC -- Create a function to encrypt a column
+# MAGIC CREATE OR REPLACE FUNCTION mask_email(email STRING)
+# MAGIC  RETURNS STRING
+# MAGIC  RETURN IF(
+# MAGIC   IS_MEMBER('field-eng-only'), -- Mask only for a group in this example
+# MAGIC   CONCAT( LEFT(email, 1), REPEAT("*", LENGTH(email) - 1)),
+# MAGIC   email);
+# MAGIC
+# MAGIC ALTER TABLE customers_test ALTER COLUMN email SET MASK mask_email;
+# MAGIC
+# MAGIC select * from customers_test limit 6;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **How do we undo the masking?**
+# MAGIC *--> Ask the assistant!*
+# MAGIC
+# MAGIC How to undo this operation: ALTER TABLE customers_test ALTER COLUMN email SET MASK mask_email ??
+
+# COMMAND ----------
+
+# Undo Masking
+
+### -- > FILL IN
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select channel, count(*) customers
+# MAGIC from customers_test
+# MAGIC group by 1 order by 1;
+
+# COMMAND ----------
+
+# DBTITLE 1,Row Filtering
+# MAGIC %sql
+# MAGIC -- Create a function to exclude rows
+# MAGIC CREATE OR REPLACE FUNCTION filter_channel(c STRING)
+# MAGIC  RETURN IF(
+# MAGIC   IS_MEMBER('ultra-admin'), -- Mask only for a group in this example
+# MAGIC   true,
+# MAGIC   c not in ('Call Center') -- When the is_member() condition fails, the table is filtered on this condition
+# MAGIC   );
+# MAGIC
+# MAGIC ALTER TABLE customers_test SET ROW FILTER filter_channel ON (channel);
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select channel, count(*) customers
+# MAGIC from customers_test
+# MAGIC group by 1 order by 1;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- Remove row filtering
+# MAGIC ALTER TABLE customers_test DROP ROW FILTER;
