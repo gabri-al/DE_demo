@@ -8,3 +8,6 @@
 - Insert the host: e.g. https://e2-demo-field-eng.cloud.databricks.com/
 - Insert a PAT
 - Create a Serverless Job based on json configurations: `databricks jobs create --json @"/Users/gabriele.albini/Downloads/_files/DE_Job.json"`
+
+### 3-Create Classic compute
+- Cluster creation: `databricks clusters create --json @"/Users/gabriele.albini/Downloads/_files/cluster_config.json"`

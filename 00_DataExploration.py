@@ -15,6 +15,7 @@
 
 # MAGIC %md
 # MAGIC Within a **Notebook**:
+# MAGIC - Set up a compute
 # MAGIC - We have a main coding language
 # MAGIC - We can use magic commands to switch language and run different operations
 # MAGIC
@@ -183,7 +184,7 @@ spark.sql(f"""
 
 # DBTITLE 1,Query History by Version
 # MAGIC %sql
-# MAGIC Select count(*) from customers_test version as of 9;
+# MAGIC Select count(*) from customers_test version as of 50;
 
 # COMMAND ----------
 
@@ -194,8 +195,14 @@ spark.sql(f"""
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC select * from customers_test limit 6;
+
+# COMMAND ----------
+
+# MAGIC %sql
 # MAGIC -- Delete a new record
-# MAGIC delete from customers_test where clientid = 'c-03c7ba57-d519-49e7-80a5-d5b98a219605';
+# MAGIC delete from customers_test where clientid = 'c-f6286fe0-ddad-4b04-b131-c3e9d869e1af'; -- Update client id
+# MAGIC --select count(*) from customers_test;
 # MAGIC
 # MAGIC -- Check history
 # MAGIC DESCRIBE HISTORY customers_test;
@@ -211,7 +218,7 @@ spark.sql(f"""
 # DBTITLE 1,Rollback
 # MAGIC %sql
 # MAGIC -- Restore to a previous version
-# MAGIC RESTORE TABLE customers_test TO VERSION AS OF 10;
+# MAGIC RESTORE TABLE customers_test TO VERSION AS OF 40;
 # MAGIC select count(*) from customers_test;
 
 # COMMAND ----------
@@ -232,7 +239,7 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # MAGIC %sql
 # MAGIC SET spark.databricks.delta.retentionDurationCheck.enabled = false;
 # MAGIC ALTER TABLE customers_test SET TBLPROPERTIES ('delta.deletedFileRetentionDuration' = '0 hour'); -- Modify accordignly
-# MAGIC VACUUM customers_test DRY RUN;
+# MAGIC VACUUM customers_test RETAIN 0 HOURS DRY RUN;
 
 # COMMAND ----------
 
@@ -249,7 +256,7 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 
 # MAGIC %sql
 # MAGIC -- What's happening here: File read error
-# MAGIC select * from customers_test VERSION AS OF 3;
+# MAGIC select * from customers_test VERSION AS OF 17;
 
 # COMMAND ----------
 
@@ -276,7 +283,7 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # MAGIC  RETURNS STRING
 # MAGIC  RETURN IF(
 # MAGIC   IS_MEMBER('field-eng-only'), -- Mask only for a group in this example
-# MAGIC   CONCAT( LEFT(email, 1), REPEAT("*", LENGTH(email) - 1)),
+# MAGIC   CONCAT( LEFT(email, 2), REPEAT("*", LENGTH(email) - 2)),
 # MAGIC   email);
 # MAGIC
 # MAGIC ALTER TABLE customers_test ALTER COLUMN email SET MASK mask_email;
@@ -300,6 +307,16 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC ALTER TABLE customers_test ALTER COLUMN email DROP MASK;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from customers_test limit 6;
+
+# COMMAND ----------
+
+# MAGIC %sql
 # MAGIC select channel, count(*) customers
 # MAGIC from customers_test
 # MAGIC group by 1 order by 1;
@@ -317,10 +334,7 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # MAGIC   );
 # MAGIC
 # MAGIC ALTER TABLE customers_test SET ROW FILTER filter_channel ON (channel);
-
-# COMMAND ----------
-
-# MAGIC %sql
+# MAGIC
 # MAGIC select channel, count(*) customers
 # MAGIC from customers_test
 # MAGIC group by 1 order by 1;
@@ -330,3 +344,4 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # MAGIC %sql
 # MAGIC -- Remove row filtering
 # MAGIC ALTER TABLE customers_test DROP ROW FILTER;
+# MAGIC ALTER TABLE customers_test ALTER COLUMN email DROP MASK;

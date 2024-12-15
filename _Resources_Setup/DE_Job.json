@@ -125,7 +125,7 @@
       "task_key": "Silver_Marketing",
       "depends_on": [
         {
-          "task_key": "Bronze_Layer"
+          "task_key": "Silver_Customers"
         }
       ],
       "run_if": "ALL_SUCCESS",
@@ -145,7 +145,7 @@
       "task_key": "Silver_Orders",
       "depends_on": [
         {
-          "task_key": "Bronze_Layer"
+          "task_key": "Silver_Customers"
         }
       ],
       "run_if": "ALL_SUCCESS",
@@ -166,9 +166,6 @@
       "depends_on": [
         {
           "task_key": "Silver_Marketing"
-        },
-        {
-          "task_key": "Silver_Customers"
         },
         {
           "task_key": "Silver_Orders"
@@ -213,7 +210,7 @@
     },
     {
       "name": "SEEDS_",
-      "default": "[301, 501, 801]"
+      "default": "[310, 510, 810]"
     }
   ],
   "run_as": {

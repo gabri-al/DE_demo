@@ -1,0 +1,23 @@
+{
+    "cluster_name": "DE Demo GabrieleA",
+    "spark_version": "15.4.x-scala2.12",
+    "aws_attributes": {
+        "first_on_demand": 1,
+        "availability": "SPOT_WITH_FALLBACK",
+        "zone_id": "auto",
+        "spot_bid_price_percent": 100
+    },
+    "node_type_id": "i3.2xlarge",
+    "spark_env_vars": {
+        "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+    },
+    "autotermination_minutes": 120,
+    "enable_elastic_disk": true,
+    "single_user_name": "gabriele.albini@databricks.com",
+    "data_security_mode": "SINGLE_USER",
+    "runtime_engine": "PHOTON",
+    "autoscale": {
+        "min_workers": 2,
+        "max_workers": 5
+    }
+}
