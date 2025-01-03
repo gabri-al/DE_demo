@@ -39,7 +39,7 @@
 
 # COMMAND ----------
 
-# DBTITLE 1,Create a temp view from a spark df
+# DBTITLE 1,Create a temp view from csv in Python
 # Read the CSV file from Volume
 df = (spark.
       read.
@@ -47,6 +47,29 @@ df = (spark.
       options(sep="|", header=True).
       load("/Volumes/"+_catalog+'/'+_schema+'/'+_volume+'/'+"customers_001.csv").
       createOrReplaceTempView("customers_tv"))
+
+
+# COMMAND ----------
+
+# DBTITLE 1,Adding Widgets to Notebook
+# MAGIC %sql
+# MAGIC -- Create widgets to include text params that we can use to parametrize queries
+# MAGIC CREATE WIDGET TEXT _catalog DEFAULT "users";
+# MAGIC CREATE WIDGET TEXT _schema DEFAULT "gabriele_albini";
+# MAGIC CREATE WIDGET TEXT _volume DEFAULT "DE_demo_land";
+
+# COMMAND ----------
+
+# DBTITLE 1,Create a temp view from csv in SQL
+# MAGIC %sql
+# MAGIC -- Read the CSV file from Volume
+# MAGIC CREATE OR REPLACE TEMP VIEW customers_tv
+# MAGIC USING CSV
+# MAGIC OPTIONS (
+# MAGIC   path '/Volumes/${_catalog}/${_schema}/${_volume}/customers_001.csv',
+# MAGIC   header 'true',
+# MAGIC   sep '|'
+# MAGIC );
 
 # COMMAND ----------
 
@@ -123,6 +146,42 @@ spark.sql(f"""
   INSERT INTO customers_test 
     select distinct * from customers_tv
 """)
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- Let's add data to the table we just created
+# MAGIC select count(*) recs_, count(distinct clientid) unique_clients from customers_test;
+
+# COMMAND ----------
+
+# DBTITLE 1,Merge into (upsert)
+# MAGIC %sql
+# MAGIC CREATE OR REPLACE TEMP VIEW customers_file2
+# MAGIC USING CSV
+# MAGIC OPTIONS (
+# MAGIC   path '/Volumes/${_catalog}/${_schema}/${_volume}/customers_002.csv',
+# MAGIC   header 'true',
+# MAGIC   sep '|'
+# MAGIC );
+# MAGIC
+# MAGIC -- Delete some emails values
+# MAGIC update customers_test
+# MAGIC set email = null where clientid in (
+# MAGIC       'c-a3d9bcc6-8323-4f04-826c-d48515966d67',
+# MAGIC       'c-fe812db0-1839-41ce-b27d-805d499c4110',
+# MAGIC       'c-7bd53f2b-e3a5-4417-8ad1-d6596746b496',
+# MAGIC       'c-d79466e5-de1c-4048-af69-614907d81a50',
+# MAGIC       'c-3e39cc0a-a248-452b-8094-e6dcfccd5430',
+# MAGIC       'c-69cde20c-15d5-4b1b-ae59-0110ce18ecb1');
+# MAGIC
+# MAGIC -- Add data making ETL idempotent (regardless of how many times I run an operation, the table desired "state" doesn't change)
+# MAGIC MERGE INTO customers_test a
+# MAGIC USING (select distinct * from customers_file2) b
+# MAGIC ON a.clientid = b.clientid
+# MAGIC WHEN MATCHED AND a.email IS NULL AND b.email IS NOT NULL THEN
+# MAGIC  UPDATE SET email = b.email
+# MAGIC WHEN NOT MATCHED THEN INSERT *;
 
 # COMMAND ----------
 
@@ -345,3 +404,26 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # MAGIC -- Remove row filtering
 # MAGIC ALTER TABLE customers_test DROP ROW FILTER;
 # MAGIC ALTER TABLE customers_test ALTER COLUMN email DROP MASK;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## AI Functions for DBSQL
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from customers_test limit 10;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC SELECT
+# MAGIC  clientid, email, country, 
+# MAGIC  ai_query(
+# MAGIC    "databricks-mixtral-8x7b-instruct",
+# MAGIC    "You are a marketing expert for a 2025 new year's promotion targeting our customers. Generate a promotional message for each customer, inviting them to book our holiday packages discounts, in maximum 20 words and using the language spoken in the customer's country: " || country
+# MAGIC  )
+# MAGIC FROM customers_test
+# MAGIC WHERE country is not null
+# MAGIC limit 35;

@@ -4,7 +4,7 @@
 
 # COMMAND ----------
 
-_catalog = 'users'
+_catalog = 'users' # Or, using SQL SET _catalog = 'users';
 _schema = 'gabriele_albini'
 _volume = 'DE_demo_land'
 
