@@ -413,11 +413,6 @@ print(spark.conf.get("spark.databricks.delta.retentionDurationCheck.enabled")) #
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC select * from customers_test limit 10;
-
-# COMMAND ----------
-
-# MAGIC %sql
 # MAGIC SELECT
 # MAGIC  clientid, email, country, 
 # MAGIC  ai_query(
